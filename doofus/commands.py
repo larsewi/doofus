@@ -13,9 +13,5 @@ def fetch_command():
     log.debug("command: fetch")
 
 
-def init_command():
-    log.debug("command: init")
-
-
 def track_command(file):
     log.debug("command: track")

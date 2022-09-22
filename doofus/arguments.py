@@ -20,9 +20,6 @@ def parse_args():
 
     subparsers = parser.add_subparsers(title="commands")
 
-    init = subparsers.add_parser("init", help="initialize leech repository")
-    init.set_defaults(func=lambda: init_command())
-
     track = subparsers.add_parser("track", help="track changes in files")
     track.add_argument("file", nargs="+", help="files to track")
     track.set_defaults(func=lambda args: track_command(args.file))

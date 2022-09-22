@@ -13,10 +13,10 @@ class Head:
         return "0"
 
     @classmethod
-    def set(id: str):
+    def set(block_id: str):
         path = Head._path()
         with open(path, "w") as f:
-            f.write(id)
+            f.write(block_id)
 
     @classmethod
     def _path():
