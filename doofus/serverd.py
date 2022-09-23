@@ -32,6 +32,7 @@ def _run_loop():
 def _stop_loop(signum, frame):
     global SHOULD_RUN
     SHOULD_RUN = False
+    os.remove(serverd_pidfile())
 
 def serverd_pidfile():
     return os.path.join(work_dir(), "doofus.pid")
@@ -69,7 +70,7 @@ def serverd_start():
 
 def serverd_stop():
     pid = serverd_pid()
-    if pid is not None:
+    if pid is None:
         log.debug("Serverd is not running.")
         return
 
