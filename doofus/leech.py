@@ -1,11 +1,10 @@
 import os
 import logging as log
-import signal
 from datetime import datetime
+
 from doofus.block import Block
 from doofus.head import Head
-from doofus.utils import object_dir, work_dir
-from daemons import daemonizer
+from doofus.utils import object_dir
 
 
 def bootstrap(ip):
