@@ -15,11 +15,11 @@ def _stop_serverd():
 
 
 @daemonizer.run(
-    os.path.join(work_dir, "doofus.pid"), signals={signal.SIGTERM: [_stop_serverd]}
+    "/tmp/doofus.pid", signals={signal.SIGTERM: [_stop_serverd]}
 )
 def serverd():
     sock = socket()
-    sock.bind("", port())
+    sock.bind(("", port()))
     sock.listen(10)
 
     while SHOULD_RUN:

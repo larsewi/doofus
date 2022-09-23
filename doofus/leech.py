@@ -4,6 +4,7 @@ from datetime import datetime
 
 from doofus.block import Block
 from doofus.head import Head
+from doofus.serverd import serverd
 from doofus.utils import object_dir
 
 

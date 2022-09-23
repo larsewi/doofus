@@ -1,17 +1,26 @@
 import logging as log
+import os
+
+from doofus.serverd import serverd
+from doofus.utils import work_dir
 
 
 def bootstrap_command(ip):
-    log.debug("command: bootstrap %s" % ip)
+    os.makedirs(work_dir(), exist_ok=True)
+    serverd()
 
 
 def commit_command():
-    log.debug("command: commit")
+    pass
 
 
 def fetch_command():
-    log.debug("command: fetch")
+    pass
+
+
+def stop_command():
+    serverd.stop()
 
 
 def track_command(file):
-    log.debug("command: track")
+    pass
