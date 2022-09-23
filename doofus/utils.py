@@ -2,12 +2,12 @@ import os
 
 
 def work_dir():
-    return ".leech"
+    path = ".leech"
+    os.makedirs(path, exist_ok=True)
+    return path
 
 
 def object_dir():
-    return os.path.join(work_dir(), "object")
-
-
-def port():
-    return 32489
+    path = os.path.join(work_dir(), "object")
+    os.makedirs(path, exist_ok=True)
+    return path

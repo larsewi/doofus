@@ -1,13 +1,14 @@
-import logging as log
 import os
-
-from doofus.serverd import serverd
-from doofus.utils import work_dir
+import signal
+from doofus.serverd import PIDFILE, serverd_start, serverd_stop
 
 
 def bootstrap_command(ip):
-    os.makedirs(work_dir(), exist_ok=True)
-    serverd()
+    pass
+
+
+def track_command(file):
+    pass
 
 
 def commit_command():
@@ -15,12 +16,14 @@ def commit_command():
 
 
 def fetch_command():
-    pass
+    with open(PIDFILE, "r") as f:
+        pid = int(f.read())
+    os.kill(pid, signal.SIGUSR1)
+
+
+def start_command():
+    serverd_start()
 
 
 def stop_command():
-    serverd.stop()
-
-
-def track_command(file):
-    pass
+    serverd_stop()
