@@ -1,10 +1,26 @@
-import os
-import signal
-from doofus.serverd import PIDFILE, serverd_start, serverd_stop
+import socket
+import logging as log
+from time import sleep
+from doofus.serverd import Serverd
+from doofus.hubd import Hubd
+from doofus.utils import SERVERD_PORT, HUBD_PORT
 
 
 def bootstrap_command(ip):
-    pass
+    Serverd(SERVERD_PORT).start()
+    Hubd(HUBD_PORT).start()
+
+    sleep(1)
+
+    sock = socket.socket()
+    sock.connect(("localhost", SERVERD_PORT))
+    sock.send(f"bootstrap {ip}".encode())
+    msg = sock.recv(4096).decode()
+    if msg == "bootstrap accepted":
+        log.info(f"Succesfully bootstrapped to {ip}")
+    else:
+        log.error(f"Failed to bootstrap to {ip}: {msg}")
+    sock.close()
 
 
 def track_command(file):
@@ -15,15 +31,10 @@ def commit_command():
     pass
 
 
-def fetch_command():
-    with open(PIDFILE, "r") as f:
-        pid = int(f.read())
-    os.kill(pid, signal.SIGUSR1)
+def rebase_command():
+    pass
 
 
-def start_command():
-    serverd_start()
-
-
-def stop_command():
-    serverd_stop()
+def kill_command():
+    Serverd(SERVERD_PORT).stop()
+    Hubd(HUBD_PORT).stop()

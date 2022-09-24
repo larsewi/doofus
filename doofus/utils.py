@@ -1,5 +1,7 @@
 import os
 
+SERVERD_PORT = 42101
+HUBD_PORT = 42102
 
 def work_dir():
     path = ".leech"

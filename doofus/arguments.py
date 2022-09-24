@@ -4,9 +4,8 @@ from doofus.commands import (
     bootstrap_command,
     track_command,
     commit_command,
-    fetch_command,
-    start_command,
-    stop_command,
+    rebase_command,
+    kill_command,
 )
 
 
@@ -25,20 +24,17 @@ def parse_args():
     bootstrap.add_argument("ip", help="target ip address")
     bootstrap.set_defaults(func=lambda args: bootstrap_command(args.ip))
 
-    track = subparsers.add_parser("track", help="track changes in files")
+    track = subparsers.add_parser("track", help="add files to track")
     track.add_argument("file", nargs="+", help="files to track")
     track.set_defaults(func=lambda args: track_command(args.file))
 
-    commit = subparsers.add_parser("commit", help="commit changes in tracked files")
+    commit = subparsers.add_parser("commit", help="commit changes")
     commit.set_defaults(func=lambda _: commit_command())
 
-    fetch = subparsers.add_parser("fetch", help="fetch changes from known hosts")
-    fetch.set_defaults(func=lambda _: fetch_command())
+    rebase = subparsers.add_parser("rebase", help="incorporate changes")
+    rebase.set_defaults(func=lambda _: rebase_command())
 
-    start = subparsers.add_parser("start", help="start served")
-    start.set_defaults(func=lambda _: start_command())
-
-    stop = subparsers.add_parser("stop", help="stop serverd")
-    stop.set_defaults(func=lambda _: stop_command())
+    kill = subparsers.add_parser("kill", help="kill daemons")
+    kill.set_defaults(func=lambda _: kill_command())
 
     return parser.parse_args()
