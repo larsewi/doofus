@@ -1,12 +1,13 @@
 import socket
 import logging as log
 from time import sleep
+from doofus.leech import track
 from doofus.serverd import Serverd
 from doofus.hubd import Hubd
 from doofus.utils import SERVERD_PORT, HUBD_PORT
 
 
-def bootstrap_command(ip):
+def bootstrap_command(address):
     Serverd(SERVERD_PORT).start()
     Hubd(HUBD_PORT).start()
 
@@ -14,17 +15,17 @@ def bootstrap_command(ip):
 
     sock = socket.socket()
     sock.connect(("localhost", SERVERD_PORT))
-    sock.send(f"bootstrap {ip}".encode())
+    sock.send(f"bootstrap {address}".encode())
     msg = sock.recv(4096).decode()
     if msg == "bootstrap accepted":
-        log.info(f"Succesfully bootstrapped to {ip}")
+        log.info(f"Succesfully bootstrapped to {address}")
     else:
-        log.error(f"Failed to bootstrap to {ip}: {msg}")
+        log.error(f"Failed to bootstrap to {address}: {msg}")
     sock.close()
 
 
-def track_command(file):
-    pass
+def track_command(file, identifier):
+    track(file, identifier)
 
 
 def commit_command():

@@ -1,0 +1,4 @@
+host,variable,value,timestamp
+example.com,filename,/tmp/example.txt/,1664122593
+example.com,content,Hello world!,1664122593
+127.0.0.1,path,/tmp/test.txt,1662850801

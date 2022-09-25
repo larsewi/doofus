@@ -21,12 +21,13 @@ def parse_args():
     subparsers = parser.add_subparsers(title="commands")
 
     bootstrap = subparsers.add_parser("bootstrap", help="bootstrap to host")
-    bootstrap.add_argument("ip", help="target ip address")
-    bootstrap.set_defaults(func=lambda args: bootstrap_command(args.ip))
+    bootstrap.add_argument("-a", "--address", required=True, help="target ip address or hostname")
+    bootstrap.set_defaults(func=lambda args: bootstrap_command(args.address))
 
     track = subparsers.add_parser("track", help="add files to track")
-    track.add_argument("file", nargs="+", help="files to track")
-    track.set_defaults(func=lambda args: track_command(args.file))
+    track.add_argument("-f", "--file", help="file to track")
+    track.add_argument("-i", "--identifier", help="primary or composite key")
+    track.set_defaults(func=lambda args: track_command(args.file, args.identifier))
 
     commit = subparsers.add_parser("commit", help="commit changes")
     commit.set_defaults(func=lambda _: commit_command())

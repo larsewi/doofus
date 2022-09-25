@@ -1,3 +1,4 @@
+from genericpath import isfile
 import os
 import sys
 import signal
@@ -53,7 +54,16 @@ class Daemon(ABC):
         self._exit()
 
     def stop(self):
-        os.kill(self.pid, signal.SIGTERM)
+        pid = self.pid
+        if pid is not None:
+            try:
+                log.debug(f"Killing process {pid}")
+                os.kill(self.pid, signal.SIGTERM)
+            except:
+                log.debug(f"Process {pid} does not exists")
+        if os.path.isfile(self._pidfile):
+            log.debug(f"Deleting pidfile {self._pidfile}")
+            os.remove(self._pidfile)
 
     @abstractmethod
     def _init():
