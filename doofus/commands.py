@@ -1,41 +1,77 @@
 import socket
 import logging as log
-from time import sleep
-from doofus.leech import track
 from doofus.serverd import Serverd
 from doofus.hubd import Hubd
-from doofus.utils import SERVERD_PORT, HUBD_PORT
+from doofus.utils import recv, send
 
 
-def bootstrap_command(address):
-    Serverd(SERVERD_PORT).start()
-    Hubd(HUBD_PORT).start()
-
-    sleep(1)
-
-    sock = socket.socket()
-    sock.connect(("localhost", SERVERD_PORT))
-    sock.send(f"bootstrap {address}".encode())
-    msg = sock.recv(4096).decode()
-    if msg == "bootstrap accepted":
-        log.info(f"Succesfully bootstrapped to {address}")
-    else:
-        log.error(f"Failed to bootstrap to {address}: {msg}")
-    sock.close()
+def start_command() -> int:
+    Serverd().start()
+    Hubd().start()
+    return 0
 
 
-def track_command(file, identifier):
-    track(file, identifier)
+def bootstrap_command(host) -> int:
+    if isinstance(host, list):
+        return 0 if all(bootstrap_command(h) == 0 for h in host) else 1
+
+    req = {"command": "bootstrap", "host": host}
+    try:
+        with socket.socket() as sock:
+            sock.settimeout(2)
+            sock.connect(("localhost", Serverd().port))
+            send(sock, req)
+            res = recv(sock)
+    except socket.error as e:
+        log.error(e)
+        return 1
+
+    if res["status"] == "success":
+        log.info(res["message"])
+        return 0
+    log.error(res["message"])
+    return 1
 
 
-def commit_command():
-    pass
+def commit_command() -> int:
+    req = {"command": "commit"}
+    try:
+        with socket.socket() as sock:
+            sock.settimeout(2)
+            sock.connect(("localhost", Serverd().port))
+            send(sock, req)
+            res = recv(sock)
+    except socket.error as e:
+        log.error(e)
+        return 1
+
+    if res["status"] == "success":
+        log.info(res["message"])
+        return 0
+    log.error(res["message"])
+    return 1
 
 
-def rebase_command():
-    pass
+def fetch_command() -> int:
+    req = {"command": "fetch"}
+    try:
+        with socket.socket() as sock:
+            sock.settimeout(2)
+            sock.connect(("localhost"), Hubd().port)
+            send(sock, req)
+            res = recv(sock)
+    except socket.error as e:
+        log.error(e)
+        return 1
+
+    if res["status"] == "success":
+        log.info(res["message"])
+        return 0
+    log.error(res["message"])
+    return 1
 
 
-def kill_command():
-    Serverd(SERVERD_PORT).stop()
-    Hubd(HUBD_PORT).stop()
+def stop_command():
+    Serverd().stop()
+    Hubd().stop()
+    return 0

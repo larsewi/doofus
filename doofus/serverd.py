@@ -1,38 +1,49 @@
 import os
 import socket
-import logging as log
+from doofus.hubd import Hubd
 from doofus.daemon import Daemon
-from doofus.utils import HUBD_PORT, work_dir
+from doofus.utils import recv, send, work_dir
+
 
 class Serverd(Daemon):
-    def __init__(self, port):
-        self.port = port
-        pidfile = os.path.join(work_dir(), "serverd.pid")
-        super().__init__(pidfile)
+    @property
+    def port(self):
+        return 2022
 
-    def _init(self):
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind(("", self.port))
-        self.sock.listen(10)
-        log.debug(f"Listening on port {self.port}.")
+    @property
+    def pidfile(self):
+        return os.path.join(work_dir(), "serverd.pid")
 
-    def _loop(self):
-        conn, addr = self.sock.accept()
-        log.debug("Got a connection from %s:%s." % addr)
-        msg = conn.recv(4096).decode()
-
-        if msg.startswith("bootstrap "):
-            sock = socket.socket()
-            sock.connect((msg[len("bootstrap "):], HUBD_PORT))
-            sock.send("bootstrap request".encode())
-            msg = sock.recv(4096)
-            sock.close()
-            conn.send(msg)
+    def _loop(self, conn: socket.socket, addr: tuple):
+        req = recv(conn)
+        command = req["command"]
+        if command == "bootstrap":
+            res = self._bootstrap(req["host"])
+        elif command == "commit":
+            res = self._commit()
         else:
-            conn.send("bad request".encode())
+            status = "failure"
+            message = f"Bad command '{command}'."
+            res = {"status": status, "message": message}
+        send(conn, res)
 
-        conn.close()
+    def _bootstrap(self, host):
+        status = "failure"
+        try:
+            with socket.socket() as sock:
+                sock.settimeout(1)
+                sock.connect((host, Hubd().port))
+                req = {"command": "bootstrap"}
+                send(sock, req)
+                res = recv(sock)
+            if res["status"] == "success":
+                status = "success"
+                message = f"Successfully bootstrapped to '{host}'."
+            else:
+                message = f"Failed to bootstrap to '{host}': {res['message']}"
+        except socket.error as e:
+            message = f"Failed to bootstrap to '{host}': {e}"
+        return {"status": status, "message": message}
 
-    def _exit(self):
-        pass
+    def _commit(self):
+        return {"status": "success", "message": "No operation."}

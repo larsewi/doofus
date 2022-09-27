@@ -1,50 +1,33 @@
 import os
-import logging as log
-from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
+import socket
 from doofus.daemon import Daemon
-from doofus.utils import work_dir
+from doofus.utils import recv, send, work_dir
+
 
 class Hubd(Daemon):
-    def __init__(self, port):
-        self.port = port
-        pidfile = os.path.join(work_dir(), "hubd.pid")
-        super().__init__(pidfile)
+    @property
+    def port(self):
+        return 2021
 
-    def _init(self):
-        self.sock = socket(AF_INET, SOCK_STREAM)
-        self.sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        self.sock.bind(("", self.port))
-        self.sock.listen(10)
-        log.debug(f"Listening on port {self.port}.")
+    @property
+    def pidfile(self):
+        return os.path.join(work_dir(), "hubd.pid")
 
-    def _loop(self):
-        conn, addr = self.sock.accept()
-        log.debug("Got a connection from %s:%s." % addr)
-        msg = conn.recv(4096).decode()
-
-        try:
-            header, payload = msg.split("\n", 2)
-        except:
-            header, payload = (msg, None)
-
-        if header == "bootstrap request":
-            path = os.path.join(work_dir(), "known_hosts")
-            if os.path.isfile(path):
-                with open(path, "r") as f:
-                    hosts = f.readlines()
-                if any(host.strip() == str(addr) for host in hosts):
-                    conn.send("bootstrap rejected".encode())
-                    conn.close()
-                    return
-
-            ip, _ = addr
-            with open(path, "w") as f:
-                f.write(f"{ip}")
-            conn.send("bootstrap accepted".encode())
+    def _loop(self, conn: socket.socket, addr: tuple):
+        req = recv(conn)
+        command = req["command"]
+        if command == "bootstrap":
+            res = self._bootstrap()
+        elif command == "fetch":
+            res = self._fetch()
         else:
-            conn.send("bad request".encode())
+            status = "failure"
+            message = f"Bad command '{command}'."
+            res = {"status": status, "message": message}
+        send(conn, res)
 
-        conn.close()
+    def _bootstrap(self):
+        return {"status": "success", "message": "No operation."}
 
-    def _exit(self):
-        pass
+    def _fetch(self):
+        return {"status": "success", "message": "No operation."}

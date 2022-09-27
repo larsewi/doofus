@@ -1,11 +1,11 @@
 import argparse
 
 from doofus.commands import (
+    start_command,
     bootstrap_command,
-    track_command,
     commit_command,
-    rebase_command,
-    kill_command,
+    fetch_command,
+    stop_command,
 )
 
 
@@ -20,22 +20,20 @@ def parse_args():
 
     subparsers = parser.add_subparsers(title="commands")
 
-    bootstrap = subparsers.add_parser("bootstrap", help="bootstrap to host")
-    bootstrap.add_argument("-a", "--address", required=True, help="target ip address or hostname")
-    bootstrap.set_defaults(func=lambda args: bootstrap_command(args.address))
+    start = subparsers.add_parser("start", help="start deamons")
+    start.set_defaults(action=lambda _: start_command())
 
-    track = subparsers.add_parser("track", help="add files to track")
-    track.add_argument("-f", "--file", help="file to track")
-    track.add_argument("-i", "--identifier", help="primary or composite key")
-    track.set_defaults(func=lambda args: track_command(args.file, args.identifier))
+    bootstrap = subparsers.add_parser("bootstrap", help="bootstrap to host")
+    bootstrap.add_argument("host", nargs="+", help="target ip address or hostname")
+    bootstrap.set_defaults(action=lambda args: bootstrap_command(args.host))
 
     commit = subparsers.add_parser("commit", help="commit changes")
-    commit.set_defaults(func=lambda _: commit_command())
+    commit.set_defaults(action=lambda _: commit_command())
 
-    rebase = subparsers.add_parser("rebase", help="incorporate changes")
-    rebase.set_defaults(func=lambda _: rebase_command())
+    fetch = subparsers.add_parser("fetch", help="fetch and incorporate changes")
+    fetch.set_defaults(action=lambda _: fetch_command())
 
-    kill = subparsers.add_parser("kill", help="kill daemons")
-    kill.set_defaults(func=lambda _: kill_command())
+    stop = subparsers.add_parser("stop", help="stop daemons")
+    stop.set_defaults(action=lambda _: stop_command())
 
     return parser.parse_args()

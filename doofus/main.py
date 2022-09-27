@@ -9,5 +9,4 @@ def main():
         format="%(levelname)8s: %(message)s",
         level=log.DEBUG if args.log_debug else log.INFO,
     )
-    args.func(args)
-    return 0
+    return args.action(args)

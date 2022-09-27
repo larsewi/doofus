@@ -22,6 +22,7 @@ def commit(data):
     log.debug(f"Moving head from {parent_id} to {child.id}")
     Head.set(child.id)
 
+
 def track(file, identifier):
     path = os.path.join(work_dir(), "tracking")
     if os.path.isfile(path):
@@ -36,7 +37,6 @@ def track(file, identifier):
     lines = [f"{f}:{i}" for f, i, in tracking.items()]
     with open(path, "w") as f:
         f.writelines(lines)
-
 
 
 def file_diff(path):
