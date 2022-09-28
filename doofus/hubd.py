@@ -4,6 +4,9 @@ from doofus.daemon import daemon
 from doofus.utils import work_dir
 
 class hubd:
+    def __init__(self) -> None:
+        super().__init__()
+
     @staticmethod
     def pidfile():
         return os.path.join(work_dir(), "serverd.pid")
@@ -36,6 +39,5 @@ class hubd:
     def fetch():
         pass
 
-    @staticmethod
-    def _event(conn, addr):
+    def event(self, conn, addr):
         pass

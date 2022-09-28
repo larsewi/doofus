@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from genericpath import isfile
 import os
 import sys
@@ -5,14 +6,13 @@ import socket
 import signal
 
 
-class daemon:
+class daemon(ABC):
     class error(Exception):
         def __init__(self, *args: object) -> None:
             super().__init__(*args)
 
-    def __init__(self, pidfile, port):
-        self._pidfile = pidfile
-        self._port = port
+    def __init__(self):
+        self.should_run = True
 
     @staticmethod
     def start(pidfile: str, port: int, event_handler):
@@ -33,23 +33,16 @@ class daemon:
         with open(pidfile, "w") as f:
             f.write(str(pid))
 
-        should_run = True
-    
-        def signal_handler(signum, frame):
-            nonlocal should_run
-            should_run = False
-
-        signal.signal(signal.SIGTERM, signal_handler)
-
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(("", port))
         sock.listen(8)
 
+        d = daemon()
         try:
-            while should_run:
+            while d.should_run:
                 conn, addr = sock.accept()
-                event_handler(conn, addr)
+                d.event(conn, addr)
                 conn.close()
         finally:
             sock.close()
@@ -64,3 +57,7 @@ class daemon:
             pid = int(f.read())
 
         os.kill(pid, signal.SIGTERM)
+
+    @abstractmethod
+    def event(conn, addr):
+        pass

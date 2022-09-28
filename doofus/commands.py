@@ -11,6 +11,7 @@ def start_command() -> int:
 def bootstrap_command(host: list) -> int:
     return 0 if all(serverd.bootstrap(h) for h in host) else 1
 
+
 def commit_command() -> int:
     return 1
 
