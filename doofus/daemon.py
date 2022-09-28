@@ -1,40 +1,23 @@
+from genericpath import isfile
 import os
 import sys
-import signal
 import socket
-import logging as log
-from abc import ABC, abstractmethod
+import signal
 
 
-class Daemon(ABC):
-    @property
-    def pid(self):
-        try:
-            with open(self.pidfile, "r") as f:
-                pid = int(f.read().strip())
-        except:
-            return None
-        return pid
+class daemon:
+    class error(Exception):
+        def __init__(self, *args: object) -> None:
+            super().__init__(*args)
 
-    @pid.setter
-    def pid(self, val):
-        with open(self.pidfile, "w") as f:
-            f.write(str(val))
+    def __init__(self, pidfile, port):
+        self._pidfile = pidfile
+        self._port = port
 
-    @property
-    @abstractmethod
-    def port(self):
-        pass
-
-    @property
-    @abstractmethod
-    def pidfile(self):
-        pass
-
-    def start(self):
-        if self.pid is not None:
-            log.debug(f"Deamon {self.pidfile} is already running.")
-            return
+    @staticmethod
+    def start(pidfile: str, port: int, event_handler):
+        if os.path.isfile(pidfile):
+            raise daemon.error("Daemon is already running")
 
         pid = os.fork()
         if pid > 0:
@@ -47,49 +30,37 @@ class Daemon(ABC):
             sys.exit(0)
 
         pid = os.getpid()
-        with open(self.pidfile, "w") as f:
+        with open(pidfile, "w") as f:
             f.write(str(pid))
 
         should_run = True
-
-        def sigterm_handler(signum, frame):
+    
+        def signal_handler(signum, frame):
             nonlocal should_run
             should_run = False
 
-        signal.signal(signal.SIGTERM, sigterm_handler)
-        log.info(f"Successfully deamonized process {pid}.")
+        signal.signal(signal.SIGTERM, signal_handler)
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        sock.bind(("", port))
+        sock.listen(8)
 
         try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                sock.settimeout(1.5)
-                sock.bind(("", self.port))
-                sock.listen(8)
-                log.debug(f"Listening on port {self.port}.")
-
-                while should_run:
-                    try:
-                        conn, addr = sock.accept()
-                        conn.settimeout(1.5)
-                    except socket.timeout:
-                        continue
-                    log.debug(f"Got a connection from {addr[0]}:{addr[1]}.")
-                    self._loop(conn, addr)
-                    conn.close()
+            while should_run:
+                conn, addr = sock.accept()
+                event_handler(conn, addr)
+                conn.close()
         finally:
-            if os.path.isfile(self.pidfile):
-                os.remove(self.pidfile)
-            exit(0)
+            sock.close()
+            os.remove(pidfile)
 
-    def stop(self):
-        pid = self.pid
-        if pid is not None:
-            try:
-                os.kill(pid, signal.SIGTERM)
-                log.info(f"Killed daemon {pid}.")
-            except ProcessLookupError as e:
-                log.warning(f"Failed to kill process {pid}: {e}")
+    @staticmethod
+    def stop(pidfile):
+        if not os.path.isfile(pidfile):
+            raise daemon.error("Daemon is not running")
 
-    @abstractmethod
-    def _loop(msg):
-        pass
+        with open(pidfile, "r") as f:
+            pid = int(f.read())
+
+        os.kill(pid, signal.SIGTERM)

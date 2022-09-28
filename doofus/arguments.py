@@ -24,13 +24,13 @@ def parse_args():
     start.set_defaults(action=lambda _: start_command())
 
     bootstrap = subparsers.add_parser("bootstrap", help="bootstrap to host")
-    bootstrap.add_argument("host", nargs="+", help="target ip address or hostname")
+    bootstrap.add_argument("host", nargs="+", help="ip address or hostname")
     bootstrap.set_defaults(action=lambda args: bootstrap_command(args.host))
 
     commit = subparsers.add_parser("commit", help="commit changes")
     commit.set_defaults(action=lambda _: commit_command())
 
-    fetch = subparsers.add_parser("fetch", help="fetch and incorporate changes")
+    fetch = subparsers.add_parser("fetch", help="fetch changes")
     fetch.set_defaults(action=lambda _: fetch_command())
 
     stop = subparsers.add_parser("stop", help="stop daemons")

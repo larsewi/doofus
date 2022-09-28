@@ -1,33 +1,41 @@
 import os
-import socket
-from doofus.daemon import Daemon
-from doofus.utils import recv, send, work_dir
+import logging as log
+from doofus.daemon import daemon
+from doofus.utils import work_dir
 
+class hubd:
+    @staticmethod
+    def pidfile():
+        return os.path.join(work_dir(), "serverd.pid")
 
-class Hubd(Daemon):
-    @property
-    def port(self):
+    @staticmethod
+    def port():
         return 2021
 
-    @property
-    def pidfile(self):
-        return os.path.join(work_dir(), "hubd.pid")
+    @staticmethod
+    def start():
+        try:
+            daemon.start(hubd.pidfile(), hubd.port(), hubd._event)
+        except Exception as e:
+            log.error(f"Failed to start hubd: {e}.")
+            return 1
+        log.info("Successfully started hubd.")
+        return 0
 
-    def _loop(self, conn: socket.socket, addr: tuple):
-        req = recv(conn)
-        command = req["command"]
-        if command == "bootstrap":
-            res = self._bootstrap()
-        elif command == "fetch":
-            res = self._fetch()
-        else:
-            status = "failure"
-            message = f"Bad command '{command}'."
-            res = {"status": status, "message": message}
-        send(conn, res)
+    @staticmethod
+    def stop():
+        try:
+            daemon.stop(hubd.pidfile())
+        except Exception as e:
+            log.error(f"Failed to stop hubd: {e}")
+            return 1
+        log.info("Successfully stopped hubd.")
+        return 0
 
-    def _bootstrap(self):
-        return {"status": "success", "message": "No operation."}
+    @staticmethod
+    def fetch():
+        pass
 
-    def _fetch(self):
-        return {"status": "success", "message": "No operation."}
+    @staticmethod
+    def _event(conn, addr):
+        pass
