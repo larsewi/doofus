@@ -15,7 +15,7 @@ class daemon(ABC):
         self.should_run = True
 
     @staticmethod
-    def start(pidfile: str, port: int, event_handler):
+    def start(pidfile: str, port: int):
         if os.path.isfile(pidfile):
             raise daemon.error("Daemon is already running")
 

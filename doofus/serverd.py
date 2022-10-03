@@ -18,7 +18,7 @@ class serverd:
     @staticmethod
     def start():
         try:
-            daemon.start(serverd.pidfile(), serverd.port(), serverd._event)
+            daemon.start(serverd.pidfile(), serverd.port())
         except Exception as e:
             log.error(f"Failed to start serverd: {e}.")
             return 1
