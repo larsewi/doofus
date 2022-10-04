@@ -1,43 +1,40 @@
+import argparse
 import os
 import logging as log
 from doofus.daemon import daemon
 from doofus.utils import work_dir
 
-class hubd:
-    def __init__(self) -> None:
-        super().__init__()
+class hubd(daemon):
+    def __init__(self, port):
+        pidfile = os.path.join(work_dir(), "hubd.pid")
+        super().__init__(pidfile, port)
+        self.hosts = []
+
+    def get_parser(self):
+        parser = argparse.ArgumentParser(prog="hubd", exit_on_error=False)
+        subparsers = parser.add_subparsers()
+
+        bootstrap = subparsers.add_parser("bootstrap")
+        bootstrap.set_defaults(action=lambda args: self.bootstrap(args.addr[0], args.addr[1]))
+
+        fetch = subparsers.add_parser("fetch")
+        fetch.add_argument("port", type=int)
+        fetch.set_defaults(action=lambda args: self.fetch(args.conn, args.port))
+
+        exit = subparsers.add_parser("exit")
+        exit.set_defaults(action=lambda _: self.exit())
+
+        return parser
 
     @staticmethod
-    def pidfile():
-        return os.path.join(work_dir(), "serverd.pid")
-
-    @staticmethod
-    def port():
-        return 2021
-
-    @staticmethod
-    def start():
-        try:
-            daemon.start(hubd.pidfile(), hubd.port(), hubd._event)
-        except Exception as e:
-            log.error(f"Failed to start hubd: {e}.")
-            return 1
-        log.info("Successfully started hubd.")
+    def start(port):
+        hubd(port).daemonize()
         return 0
 
-    @staticmethod
-    def stop():
-        try:
-            daemon.stop(hubd.pidfile())
-        except Exception as e:
-            log.error(f"Failed to stop hubd: {e}")
-            return 1
-        log.info("Successfully stopped hubd.")
+    def bootstrap(self, host, port):
+        self.hosts.append((host, port))
+        log.debug(f"hubd: Added '{host}:{port}' to bootstrapped hosts.")
         return 0
 
-    @staticmethod
-    def fetch():
-        pass
-
-    def event(self, conn, addr):
-        pass
+    def fetch(self, port):
+        return 0

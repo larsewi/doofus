@@ -1,42 +1,44 @@
+import argparse
 import os
 import logging as log
+import socket
 from doofus.daemon import daemon
-from doofus.utils import work_dir
+from doofus.utils import recv, send, work_dir
 
-class serverd:
-    def __init__(self) -> None:
-        super().__init__()
+class serverd(daemon):
+    def __init__(self, port):
+        pidfile = os.path.join(work_dir(), "serverd.pid")
+        super().__init__(pidfile, port)
+
+    def get_parser(self):
+        parser = argparse.ArgumentParser(prog="serverd", exit_on_error=False)
+        subparsers = parser.add_subparsers()
+
+        bootstrap = subparsers.add_parser("bootstrap")
+        bootstrap.add_argument("host")
+        bootstrap.add_argument("port", type=int)
+        bootstrap.set_defaults(action=lambda args: self.bootstrap(args.host, args.port))
+
+        fetch = subparsers.add_parser("fetch")
+        fetch.set_defaults(action=lambda args: self.fetch(args.conn))
+
+        exit = subparsers.add_parser("exit")
+        exit.set_defaults(action=lambda _: self.exit())
+
+        return parser
 
     @staticmethod
-    def pidfile():
-        return os.path.join(work_dir(), "serverd.pid")
-
-    @staticmethod
-    def port():
-        return 2021
-
-    @staticmethod
-    def start():
-        try:
-            daemon.start(serverd.pidfile(), serverd.port())
-        except Exception as e:
-            log.error(f"Failed to start serverd: {e}.")
-            return 1
-        log.info("Successfully started serverd.")
+    def start(port):
+        serverd(port).daemonize()
         return 0
 
-    @staticmethod
-    def stop():
-        try:
-            daemon.stop(serverd.pidfile())
-        except Exception as e:
-            log.error(f"Failed to stop serverd: {e}")
-            return 1
-        log.info("Successfully stopped serverd.")
+    def bootstrap(self, host, port):
+        log.debug(f"serverd: Bootstrapping to host '{host}:{port}'")
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((host, port))
+            send(s, "bootstrap")
+            ret = recv(s)
+        return ret
+
+    def fetch(self, args):
         return 0
-
-    def bootstrap(host):
-        pass
-
-    def event(self, conn, addr):
-        pass

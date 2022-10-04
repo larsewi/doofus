@@ -20,11 +20,12 @@ def parse_args():
 
     subparsers = parser.add_subparsers(title="commands")
 
-    start = subparsers.add_parser("start", help="start deamons")
-    start.set_defaults(action=lambda _: start_command())
+    start = subparsers.add_parser("start", help="start deamon")
+    start.add_argument("name", nargs="+", choices=["serverd", "hubd"], help="name of daemon to start")
+    start.set_defaults(action=lambda args: start_command(args.name))
 
     bootstrap = subparsers.add_parser("bootstrap", help="bootstrap to host")
-    bootstrap.add_argument("host", nargs="+", help="ip address or hostname")
+    bootstrap.add_argument("host", help="ip address or hostname")
     bootstrap.set_defaults(action=lambda args: bootstrap_command(args.host))
 
     commit = subparsers.add_parser("commit", help="commit changes")
@@ -33,7 +34,8 @@ def parse_args():
     fetch = subparsers.add_parser("fetch", help="fetch changes")
     fetch.set_defaults(action=lambda _: fetch_command())
 
-    stop = subparsers.add_parser("stop", help="stop daemons")
-    stop.set_defaults(action=lambda _: stop_command())
+    stop = subparsers.add_parser("stop", help="stop daemon")
+    stop.add_argument("name", nargs="+", choices=["serverd", "hubd"], help="name of daemon to stop")
+    stop.set_defaults(action=lambda args: stop_command(args.name))
 
     return parser.parse_args()

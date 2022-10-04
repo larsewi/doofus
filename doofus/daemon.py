@@ -1,22 +1,26 @@
-from abc import ABC, abstractmethod
-from genericpath import isfile
 import os
 import sys
-import socket
 import signal
+import socket
+import argparse
+from abc import ABC, abstractmethod
+from argparse import ArgumentParser
+
+from doofus.utils import recv, send
 
 
 class daemon(ABC):
     class error(Exception):
-        def __init__(self, *args: object) -> None:
+        def __init__(self, *args):
             super().__init__(*args)
 
-    def __init__(self):
+    def __init__(self, pidfile, port):
+        self.pidfile = pidfile
+        self.port = port
         self.should_run = True
 
-    @staticmethod
-    def start(pidfile: str, port: int):
-        if os.path.isfile(pidfile):
+    def daemonize(self):
+        if os.path.isfile(self.pidfile):
             raise daemon.error("Daemon is already running")
 
         pid = os.fork()
@@ -30,34 +34,50 @@ class daemon(ABC):
             sys.exit(0)
 
         pid = os.getpid()
-        with open(pidfile, "w") as f:
+        with open(self.pidfile, "w") as f:
             f.write(str(pid))
+
+        class Killed(Exception):
+            def __init__(self, signum) -> None:
+                super().__init__(f"Killed with signal {signum}")
+
+        def signal_handler(signum, frame):
+            raise Killed(signum)
+
+        signal.signal(signal.SIGTERM, signal_handler)
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.bind(("", port))
+        sock.bind(("", self.port))
         sock.listen(8)
 
-        d = daemon()
+        parser = self.get_parser()
         try:
-            while d.should_run:
-                conn, addr = sock.accept()
-                d.event(conn, addr)
+            while self.should_run:
+                conn, _ = sock.accept()
+                req = recv(conn).strip().split()
+                try:
+                    args = parser.parse_args(req)
+                except argparse.ArgumentError:
+                    send(conn, 1)
+                else:
+                    args.addr = sock.getsockname()
+                    res = args.action(args)
+                    send(conn, res)
                 conn.close()
+        except:
+            ret = 1
+        else:
+            ret = 0
         finally:
             sock.close()
-            os.remove(pidfile)
-
-    @staticmethod
-    def stop(pidfile):
-        if not os.path.isfile(pidfile):
-            raise daemon.error("Daemon is not running")
-
-        with open(pidfile, "r") as f:
-            pid = int(f.read())
-
-        os.kill(pid, signal.SIGTERM)
+            os.remove(self.pidfile)
+            sys.exit(ret)
 
     @abstractmethod
-    def event(conn, addr):
+    def get_parser(self) -> ArgumentParser:
         pass
+
+    def exit(self):
+        self.should_run = False
+        return 0
