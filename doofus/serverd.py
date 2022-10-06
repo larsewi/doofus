@@ -36,7 +36,7 @@ class serverd(daemon):
         log.debug(f"serverd: Bootstrapping to host '{host}:{port}'")
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.connect((host, port))
-            send(s, "bootstrap")
+            send(s, f"bootstrap {self.port}")
             ret = recv(s)
         return ret
 

@@ -15,7 +15,8 @@ class hubd(daemon):
         subparsers = parser.add_subparsers()
 
         bootstrap = subparsers.add_parser("bootstrap")
-        bootstrap.set_defaults(action=lambda args: self.bootstrap(args.addr[0], args.addr[1]))
+        bootstrap.add_argument("port", type=int)
+        bootstrap.set_defaults(action=lambda args: self.bootstrap(args.addr[0], args.port))
 
         fetch = subparsers.add_parser("fetch")
         fetch.add_argument("port", type=int)

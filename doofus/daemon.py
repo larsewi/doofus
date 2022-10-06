@@ -3,6 +3,7 @@ import sys
 import signal
 import socket
 import argparse
+import logging as log
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser
 
@@ -19,9 +20,13 @@ class daemon(ABC):
         self.port = port
         self.should_run = True
 
+    @property
+    def name(self):
+        return type(self).__name__
+
     def daemonize(self):
         if os.path.isfile(self.pidfile):
-            raise daemon.error("Daemon is already running")
+            raise daemon.error(f"Daemon {self.name} is already running")
 
         pid = os.fork()
         if pid > 0:
@@ -41,7 +46,7 @@ class daemon(ABC):
             def __init__(self, signum) -> None:
                 super().__init__(f"Killed with signal {signum}")
 
-        def signal_handler(signum, frame):
+        def signal_handler(signum, _):
             raise Killed(signum)
 
         signal.signal(signal.SIGTERM, signal_handler)
@@ -50,18 +55,20 @@ class daemon(ABC):
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind(("", self.port))
         sock.listen(8)
+        log.debug(f"{self.name}: Listening on port {self.port}")
 
         parser = self.get_parser()
         try:
             while self.should_run:
-                conn, _ = sock.accept()
+                conn, addr = sock.accept()
+                log.debug(f"{self.name}: Connection from '{addr[0]}:{addr[1]}'")
                 req = recv(conn).strip().split()
                 try:
                     args = parser.parse_args(req)
+                    args.addr = addr
                 except argparse.ArgumentError:
                     send(conn, 1)
                 else:
-                    args.addr = sock.getsockname()
                     res = args.action(args)
                     send(conn, res)
                 conn.close()
@@ -72,6 +79,7 @@ class daemon(ABC):
         finally:
             sock.close()
             os.remove(self.pidfile)
+            log.debug(f"{self.name}: daemon stopped")
             sys.exit(ret)
 
     @abstractmethod
