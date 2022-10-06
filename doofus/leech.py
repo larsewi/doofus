@@ -1,43 +1,70 @@
 import os
-import logging as log
-from datetime import datetime
+import json
+import re
 
-from doofus.block import Block
-from doofus.head import Head
-from doofus.utils import object_dir, work_dir
-
-
-def commit(data):
-    parent_id = Head.get()
-    timestamp = datetime.now()
-    child = Block(parent_id, timestamp, data)
-    log.debug(f"Created block:\n{child}")
-
-    path = os.path.join(object_dir(), child.id[:2], child.id[2:])
-    block = child.marshal()
-    with open(path, "w") as f:
-        log.debug(f"Writing block to {path}:")
-        f.write(block)
-
-    log.debug(f"Moving head from {parent_id} to {child.id}")
-    Head.set(child.id)
-
-
-def track(file, identifier):
-    path = os.path.join(work_dir(), "tracking")
-    if os.path.isfile(path):
-        with open(path, "r") as f:
-            lines = f.readlines()
-        tracking = {f: i for f, i in (l.split(":") for l in lines)}
-    else:
-        tracking = {}
-
-    tracking[file] = identifier
-
-    lines = [f"{f}:{i}" for f, i, in tracking.items()]
-    with open(path, "w") as f:
-        f.writelines(lines)
-
-
-def file_diff(path):
+def LCH_LoadCSV():
     pass
+
+def LCH_StoreCSV():
+    pass
+
+class LCH_Table:
+    def __init__(self, locator, *, load_fn=LCH_LoadCSV, store_fn=LCH_StoreCSV):
+        pass
+
+class LCH_Instance:
+    def __init__(self):
+        pass
+
+class Leech:
+    def __init__(self, data):
+        self._data = data
+
+    @property
+    @staticmethod
+    def work_dir():
+        path = ".leech"
+        if not os.path.isdir(path):
+            os.mkdir(path)
+        return path
+
+    @property
+    @staticmethod
+    def object_dir():
+        path = os.path.join(Leech.work_dir, "object")
+        if not os.path.isdir(path):
+            os.mkdir(path)
+        return path
+
+    @staticmethod
+    def load():
+        path = os.path.join(Leech.work_dir, "leech.json")
+        if os.path.isfile(path):
+            with open(path, "r") as f:
+                data = json.load(f)
+        else:
+            data = { "head": "0" * 40, "tracked": []}
+        return Leech(data)
+
+    def save(self):
+        path = os.path.join(Leech.work_dir, "leech.json")
+        with open(path, "w") as f:
+            json.dump(self._data, f)
+
+    @property
+    def head(self) -> str:
+        hash = self._data["head"]
+        assert re.fullmatch(r"[0-9a-f]{40}", hash)
+        return hash
+
+    @head.setter
+    def head(self, hash: str):
+        assert re.fullmatch(r"[0-9a-f]{40}", hash)
+        self._data["head"] = hash
+
+    @property
+    def tracked(self) -> list:
+        return self._data["tracked"]
+
+    def commit(self):
+        pass

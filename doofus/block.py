@@ -1,5 +1,8 @@
 import hashlib
 from functools import cached_property
+import os
+
+from doofus.utils import object_dir
 
 hasher = hashlib.sha1()
 
@@ -9,6 +12,21 @@ class Block:
         self._parent = parent
         self._timestamp = timestamp
         self._data = data
+
+    @staticmethod
+    def load(id):
+        path = os.path.join(object_dir(), id[:2], id[2:])
+        if os.path.isfile(path):
+            with open(path, "r") as f:
+                block = f.read()
+            return Block.unmarshal(block)
+        return None
+
+    def store(self):
+        path = os.path.join(object_dir(), id[:2], id[2:])
+        block = self.marshal()
+        with open(path, "w") as f:
+            f.write(block)
 
     def marshal(self) -> str:
         "\n".join(self._parent, self._timestamp, self._data)
@@ -41,7 +59,7 @@ class Block:
         return self
 
     def __next__(self):
-        if self._parent == "0":
+        if self._parent == "0" * 40:
             raise StopIteration
         return Block.load(self._parent)
 
