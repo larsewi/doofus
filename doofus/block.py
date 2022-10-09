@@ -23,10 +23,14 @@ class Block:
         return None
 
     def store(self):
-        path = os.path.join(object_dir(), id[:2], id[2:])
+        id = self.id
+        path = os.path.join(object_dir(), id[:2])
+        os.makedirs(path, exist_ok=True)
+        path = os.path.join(path, id[2:])
         block = self.marshal()
         with open(path, "w") as f:
             f.write(block)
+        return id
 
     def marshal(self) -> str:
         "\n".join(self._parent, self._timestamp, self._data)

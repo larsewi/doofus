@@ -3,6 +3,9 @@ import os
 import re
 import csv
 import json
+from doofus.block import Block
+
+from doofus.utils import work_dir
 
 def LCH_LoadTableCSV(path):
     """
@@ -50,7 +53,10 @@ class LCH_Table:
         self.data = {}
 
 class LCH_Instance:
-    def __init__(self, tables: LCH_Table):
+    def __init__(self, work_dir: str, tables: LCH_Table):
+        if not os.path.isdir(work_dir):
+            os.mkdir(work_dir)
+        self.work_dir = work_dir
         self.tables = tables
 
 
@@ -75,56 +81,16 @@ def _store_tables(tables: list[LCH_Table]):
             rows.append(key.split(",") + val.split(","))
         table.store(table.dest, rows)
 
+def _get_head(workdir):
+    path = os.path.join(work_dir, "HEAD")
+    if not os.path.isfile(path):
+        return None
 
-class Leech:
-    def __init__(self, data):
-        self._data = data
+def commit(instance: LCH_Instance):
+    old = _load_tables(instance.tables)
 
-    @property
-    @staticmethod
-    def work_dir():
-        path = ".leech"
-        if not os.path.isdir(path):
-            os.mkdir(path)
-        return path
-
-    @property
-    @staticmethod
-    def object_dir():
-        path = os.path.join(Leech.work_dir, "object")
-        if not os.path.isdir(path):
-            os.mkdir(path)
-        return path
-
-    @staticmethod
-    def load():
-        path = os.path.join(Leech.work_dir, "leech.json")
-        if os.path.isfile(path):
-            with open(path, "r") as f:
-                data = json.load(f)
-        else:
-            data = { "head": "0" * 40, "tracked": []}
-        return Leech(data)
-
-    def save(self):
-        path = os.path.join(Leech.work_dir, "leech.json")
-        with open(path, "w") as f:
-            json.dump(self._data, f)
-
-    @property
-    def head(self) -> str:
-        hash = self._data["head"]
-        assert re.fullmatch(r"[0-9a-f]{40}", hash)
-        return hash
-
-    @head.setter
-    def head(self, hash: str):
-        assert re.fullmatch(r"[0-9a-f]{40}", hash)
-        self._data["head"] = hash
-
-    @property
-    def tracked(self) -> list:
-        return self._data["tracked"]
-
-    def commit(self):
-        pass
+    head = _get_head(instance.work_dir)
+    if head is None:
+        new = old
+    else:
+        chain = [block for block in Block.load(head)]
