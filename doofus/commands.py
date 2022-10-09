@@ -1,7 +1,9 @@
 import socket
+from doofus.definition import create_leech_instance
 from doofus.serverd import serverd
 from doofus.hubd import hubd
 from doofus.utils import HUBD_PORT, SERVERD_PORT, recv, send
+from doofus.leech import _load_tables, _store_tables
 
 
 def start_command(name) -> int:
@@ -29,7 +31,10 @@ def bootstrap_command(host) -> int:
 
 
 def commit_command() -> int:
-    return 1
+    instance = create_leech_instance()
+    _load_tables(instance.tables)
+    _store_tables(instance.tables)
+    return 0
 
 
 def fetch_command() -> int:
