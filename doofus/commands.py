@@ -3,7 +3,7 @@ from doofus.definition import create_leech_instance
 from doofus.serverd import serverd
 from doofus.hubd import hubd
 from doofus.utils import HUBD_PORT, SERVERD_PORT, recv, send
-from doofus.leech import _load_tables, _store_tables
+from doofus.leech import _load_tables, _store_tables, commit
 
 
 def start_command(name) -> int:
@@ -32,8 +32,7 @@ def bootstrap_command(host) -> int:
 
 def commit_command() -> int:
     instance = create_leech_instance()
-    _load_tables(instance.tables)
-    _store_tables(instance.tables)
+    commit(instance)
     return 0
 
 

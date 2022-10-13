@@ -1,22 +1,10 @@
-from asyncore import read
 import os
-import re
 import csv
-import json
 from doofus.block import Block
 
 from doofus.utils import work_dir
 
 def LCH_LoadTableCSV(path):
-    """
-    Load a csv table as a two dimentional list where the first row contains
-    the field names and the remaining rows contain the data. E.g.
-    [
-        [id, lastname, firstname, born],
-        [ 1,     Bond,     James, 1953],
-        [ 2,    Wayne,     Bruce, 1939]
-    ]
-    """
     if not os.path.isfile(path):
         return None
     with open(path, "r") as f:
@@ -25,15 +13,6 @@ def LCH_LoadTableCSV(path):
     return rows
 
 def LCH_StoreTableCSV(path, rows):
-    """
-    Store a two dimentional list as csv where the first row contains the field
-    names and the remaining rows contain the data. E.g.
-    [
-        [id, lastname, firstname, born],
-        [ 1,     Bond,     James, 1953],
-        [ 2,    Wayne,     Bruce, 1939]
-    ]
-    """
     with open(path, "w") as f:
         writer = csv.writer(f)
         writer.writerows(rows)
@@ -70,8 +49,6 @@ def _load_tables(tables: list[LCH_Table]):
         for row in rows[1:]:
             key = ",".join([row[i] for i in unique])
             val = ",".join([row[i] for i in non_unique])
-            print(key)
-            print(val)
             table.data[key] = val
 
 def _store_tables(tables: list[LCH_Table]):
@@ -81,16 +58,41 @@ def _store_tables(tables: list[LCH_Table]):
             rows.append(key.split(",") + val.split(","))
         table.store(table.dest, rows)
 
+def _diff_dict(primary, table):
+    fields = table[:1]
+    key_index = (fields.index(f) for f in fields if f in primary)
+    val_index = (fields.index(f) for f in fields if f not in primary)
+    key_val_pairs = (((row[i] for i in key_index), (row[i] for i in val_index)) for row in table)
+    dct = {key: val for key, val in key_val_pairs}
+    return dct
+
+def _calculate_diff(primary, new, old):
+    new = _diff_dict(primary, new)
+    old = _diff_dict(primary, old)
+    diff = []
+
+    # Rows added from new
+    for key in new.keys() - old.keys():
+        diff.append(f"+{','.join(key)}:{','.join(new[key])}")
+
+    # Rows removed from new
+    for key in new.keys() - old.keys():
+        diff.append(f"-{','.join(key)}")
+
+    # Rows changed in new
+    for key in new.keys() & old.keys():
+        if new[key] != old[key]:
+            diff.append(f"%{','.join(key)}:{','.join(new[key])}")
+
+    return diff
+
 def _get_head(workdir):
     path = os.path.join(work_dir, "HEAD")
     if not os.path.isfile(path):
         return None
 
 def commit(instance: LCH_Instance):
-    old = _load_tables(instance.tables)
+    _load_tables(instance.tables)
+    new = instance.tables
 
     head = _get_head(instance.work_dir)
-    if head is None:
-        new = old
-    else:
-        chain = [block for block in Block.load(head)]
