@@ -10,10 +10,10 @@ def test_rotate_fields():
         ["mccartney", "paul", "1942"],
     ]
 
-    test =_rotate_fields(("lastname"), table)
+    test =_rotate_fields("lastname", table)
     assert test == table
 
-    test = _rotate_fields(("firstname"), table)
+    test = _rotate_fields("firstname", table)
     expect = [
         ["firstname", "lastname", "born"],
         ["george", "harrison", "1943"],
@@ -23,7 +23,7 @@ def test_rotate_fields():
     ]
     assert test == expect
 
-    test = _rotate_fields(("born"), table)
+    test = _rotate_fields("born", table)
     expect = [
         ["born", "lastname", "firstname"],
         ["1943", "harrison", "george"],
@@ -66,42 +66,41 @@ def test_rotate_fields():
     assert test == table
 
 
-# def test_diff_dict():
-#     table = [
-#         ["id", "firstname", "lastname", "born"],
-#         ["0", "harrison", "george", "1943"],
-#         ["1", "starr", "ringo", "1940"],
-#         ["2", "lennon", "john", "1940"],
-#         ["3", "mccartney", "paul", "1942"],
-#     ]
-#     primary_fields, other_fields, dct = _table_dict(("id"), table)
-#     assert primary_fields == "id"
-#     assert other_fields == "firstname,lastname,born"
-#     expect = {
-#         "0": "harrison,george,1943",
-#         "1": "starr,ringo,1940",
-#         "2": "lennon,john,1940",
-#         "3": "mccartney,paul,1942",
-#     }
-#     assert dct == expect
+def test_diff_dict():
+    table = [
+        ["firstname", "lastname", "born"],
+        ["harrison", "george", "1943"],
+        ["starr", "ringo", "1940"],
+        ["lennon", "john", "1940"],
+        ["mccartney", "paul", "1942"],
+    ]
+    fields, dct = _table_dict(("firstname"), table)
+    assert fields == "firstname,lastname,born"
+    expect = {
+        "harrison": "george,1943",
+        "starr": "ringo,1940",
+        "lennon": "john,1940",
+        "mccartney": "paul,1942",
+    }
+    assert dct == expect
 
-#     table = [
-#         ["id", "firstname", "lastname", "born"],
-#         ["0", "harrison", "george", "1943"],
-#         ["1", "starr", "ringo", "1940"],
-#         ["2", "lennon", "john", "1940"],
-#         ["3", "mccartney", "paul", "1942"],
-#     ]
-#     primary_fields, other_fields, dct = _table_dict(("firstname", "lastname"), table)
-#     assert primary_fields == "firstname,lastname"
-#     assert other_fields == "id,born"
-#     expect = {
-#         "harrison,george": "0,1943",
-#         "starr,ringo": "1,1940",
-#         "lennon,john": "2,1940",
-#         "mccartney,paul": "3,1942",
-#     }
-#     assert dct == expect
+    table = [
+        ["id", "firstname", "lastname", "born"],
+        ["0", "harrison", "george", "1943"],
+        ["1", "starr", "ringo", "1940"],
+        ["2", "lennon", "john", "1940"],
+        ["3", "mccartney", "paul", "1942"],
+    ]
+    primary_fields, other_fields, dct = _table_dict(("firstname", "lastname"), table)
+    assert primary_fields == "firstname,lastname"
+    assert other_fields == "id,born"
+    expect = {
+        "harrison,george": "0,1943",
+        "starr,ringo": "1,1940",
+        "lennon,john": "2,1940",
+        "mccartney,paul": "3,1942",
+    }
+    assert dct == expect
 
 
 # def test_calculate_diff():

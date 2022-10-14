@@ -2,6 +2,7 @@ import os
 import csv
 from re import A
 import re
+from typing import Iterable
 from doofus.block import Block
 
 from doofus.utils import work_dir
@@ -47,36 +48,41 @@ class LCH_Instance:
         self.tables = tables
 
 
-def _rotate_fields(first: list[str], table: list[list[str]]):
+def _rotate_fields(primary: str|tuple[str], table: list[list[str]]):
+    """
+    Rotate fields to have primary keys first, but keep the order within
+    primary- and non-primary keys.
+    """
+    if isinstance(primary, str):
+        primary = (primary,)
+
     fields = table[0]
-    first_indecies = [fields.index(f) for f in fields if f in first]
-    last_indecies = [fields.index(f) for f in fields if f not in first]
+    assert all(field in fields for field in primary), f"Primary keys {primary} not in fields {fields}"
+
+    primary_indecies = [fields.index(f) for f in fields if f in primary]
+    other_indecies = [fields.index(f) for f in fields if f not in primary]
+    assert len(fields) == len(primary_indecies) + len(other_indecies)
 
     rotated = []
     for row in table:
-        first_cols = [row[i] for i in first_indecies]
-        last_cols = [row[i] for i in last_indecies]
-        rotated.append(first_cols + last_cols)
+        primary_cols = [row[i] for i in primary_indecies]
+        other_cols = [row[i] for i in other_indecies]
+        rotated.append(primary_cols + other_cols)
     return rotated
 
 
 def _table_dict(primary: list[str], table: list[list[str]]):
+    table = _rotate_fields(primary, table)
     fields = table[0]
     rows = table[1:]
 
-    primary_indecies = [fields.index(f) for f in fields if f in primary]
-    other_indecies = [fields.index(f) for f in fields if f not in primary]
-
-    primiary_fields = ",".join(primary)
-    other_fields = ",".join(fields[i] for i in other_indecies)
-
     dct = {}
     for row in rows:
-        key = ",".join(row[i] for i in primary_indecies)
-        val = ",".join(row[i] for i in other_indecies)
+        key = ",".join(row[:len(primary)])
+        val = ",".join(row[len(primary):])
         dct[key] = val
 
-    return primiary_fields, other_fields, dct
+    return fields, dct
 
 
 def _calculate_table_diff(identifier, primary, new, old):
