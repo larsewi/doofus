@@ -1,134 +1,202 @@
-from doofus.leech import _diff_dict, _calculate_diff
+from doofus.leech import _rotate_fields, _table_dict, _calculate_table_diff
 
-def test_diff_dict():
+
+def test_rotate_fields():
     table = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
+        ["lastname", "firstname", "born"],
+        ["harrison", "george", "1943"],
+        ["starr", "ringo", "1940"],
+        ["lennon", "john", "1940"],
+        ["mccartney", "paul", "1942"],
     ]
-    fields, dct = _diff_dict(("id"), table)
-    assert fields == "id,firstname,lastname,born"
-    expect = {
-        "0": "harrison,george,1943",
-        "1": "starr,ringo,1940",
-        "2": "lennon,john,1940",
-        "3": "mccartney,paul,1942",
-    }
-    assert dct == expect
 
-    table = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    fields, dct = _diff_dict(("firstname", "lastname"), table)
-    assert fields == "firstname,lastname,id,born"
-    expect = {
-        "harrison,george": "0,1943",
-        "starr,ringo": "1,1940",
-        "lennon,john": "2,1940",
-        "mccartney,paul": "3,1942",
-    }
-    assert dct == expect
+    test =_rotate_fields(("lastname"), table)
+    assert test == table
 
-
-def test_calculate_diff():
-    # No change
-    new = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    old = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    diff = _calculate_diff(["id"], new, old)
-    expect = ["id,firstname,lastname,born"]
-    assert diff == expect
-
-    # Add row
-    new = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    old = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    diff = _calculate_diff(["id"], new, old)
-    expect = ["id,firstname,lastname,born", "+1,starr,ringo,1940"]
-    assert diff == expect
-
-    # Remove row
-    new = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    old = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    diff = _calculate_diff(["id"], new, old)
-    expect = ["id,firstname,lastname,born", "-2"]
-    assert diff == expect
-
-    # Change row
-    new = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "McCartney", "Paul", "1942"],
-    ]
-    old = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    diff = _calculate_diff(["id"], new, old)
-    expect = ["id,firstname,lastname,born", "%3,McCartney,Paul,1942"]
-    assert diff == expect
-
-    # Remove, add, change, combined primary key
-    new = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["2", "lennon", "john", "1940"],
-        ["1", "mccartney", "paul", "1942"],
-    ]
-    old = [
-        ["id", "firstname", "lastname", "born"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    diff = _calculate_diff(["firstname", "lastname"], new, old)
+    test = _rotate_fields(("firstname"), table)
     expect = [
-        "firstname,lastname,id,born",
-        "+harrison,george,0,1943",
-        "-starr,ringo",
-        "%mccartney,paul,1,1942",
+        ["firstname", "lastname", "born"],
+        ["george", "harrison", "1943"],
+        ["ringo", "starr", "1940"],
+        ["john", "lennon", "1940"],
+        ["paul", "mccartney", "1942"],
     ]
-    assert diff == expect
+    assert test == expect
+
+    test = _rotate_fields(("born"), table)
+    expect = [
+        ["born", "lastname", "firstname"],
+        ["1943", "harrison", "george"],
+        ["1940", "starr", "ringo"],
+        ["1940", "lennon", "john"],
+        ["1942", "mccartney", "paul"],
+    ]
+    assert test == expect
+
+    test = _rotate_fields(("lastname", "firstname"), table)
+    assert test == table
+
+    test = _rotate_fields(("lastname", "born"), table)
+    expect = [
+        ["lastname", "born", "firstname"],
+        ["harrison", "1943", "george"],
+        ["starr", "1940", "ringo"],
+        ["lennon", "1940", "john"],
+        ["mccartney", "1942", "paul"],
+    ]
+    assert test == expect
+
+    test = _rotate_fields(("firstname", "born"), table)
+    expect = [
+        ["firstname", "born", "lastname"],
+        ["george", "1943", "harrison"],
+        ["ringo", "1940", "starr"],
+        ["john", "1940", "lennon"],
+        ["paul", "1942", "mccartney"],
+    ]
+
+    # Make sure order is kept even though order in first is not kept
+    test = _rotate_fields(("lastname", "firstname", "born"), table)
+    assert test == table
+
+    test = _rotate_fields(("born", "lastname", "firstname"), table)
+    assert test == table
+
+    test = _rotate_fields(("firstname", "born", "lastname"), table)
+    assert test == table
+
+
+# def test_diff_dict():
+#     table = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     primary_fields, other_fields, dct = _table_dict(("id"), table)
+#     assert primary_fields == "id"
+#     assert other_fields == "firstname,lastname,born"
+#     expect = {
+#         "0": "harrison,george,1943",
+#         "1": "starr,ringo,1940",
+#         "2": "lennon,john,1940",
+#         "3": "mccartney,paul,1942",
+#     }
+#     assert dct == expect
+
+#     table = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     primary_fields, other_fields, dct = _table_dict(("firstname", "lastname"), table)
+#     assert primary_fields == "firstname,lastname"
+#     assert other_fields == "id,born"
+#     expect = {
+#         "harrison,george": "0,1943",
+#         "starr,ringo": "1,1940",
+#         "lennon,john": "2,1940",
+#         "mccartney,paul": "3,1942",
+#     }
+#     assert dct == expect
+
+
+# def test_calculate_diff():
+#     # No change
+#     new = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     old = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     diff = _calculate_table_diff(["id"], new, old)
+#     expect = ["id,firstname,lastname,born"]
+#     assert diff == expect
+# 
+#     # Add row
+#     new = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     old = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     diff = _calculate_table_diff(["id"], new, old)
+#     expect = ["id,firstname,lastname,born", "+1,starr,ringo,1940"]
+#     assert diff == expect
+# 
+#     # Remove row
+#     new = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     old = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     diff = _calculate_table_diff(["id"], new, old)
+#     expect = ["id,firstname,lastname,born", "-2"]
+#     assert diff == expect
+# 
+#     # Change row
+#     new = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "McCartney", "Paul", "1942"],
+#     ]
+#     old = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     diff = _calculate_table_diff(["id"], new, old)
+#     expect = ["id,firstname,lastname,born", "%3,McCartney,Paul,1942"]
+#     assert diff == expect
+# 
+#     # Remove, add, change, combined primary key
+#     new = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["0", "harrison", "george", "1943"],
+#         ["2", "lennon", "john", "1940"],
+#         ["1", "mccartney", "paul", "1942"],
+#     ]
+#     old = [
+#         ["id", "firstname", "lastname", "born"],
+#         ["1", "starr", "ringo", "1940"],
+#         ["2", "lennon", "john", "1940"],
+#         ["3", "mccartney", "paul", "1942"],
+#     ]
+#     diff = _calculate_table_diff(["firstname", "lastname"], new, old)
+#     expect = [
+#         "firstname,lastname,id,born",
+#         "+harrison,george,0,1943",
+#         "-starr,ringo",
+#         "%mccartney,paul,1,1942",
+#     ]
+#     assert diff == expect
