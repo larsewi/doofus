@@ -5,6 +5,7 @@ from doofus.block import Block
 
 from doofus.utils import work_dir
 
+
 def LCH_LoadTableCSV(path):
     if not os.path.isfile(path):
         return None
@@ -13,22 +14,29 @@ def LCH_LoadTableCSV(path):
         rows = [row for row in reader]
     return rows
 
+
 def LCH_StoreTableCSV(path, rows):
     with open(path, "w") as f:
         writer = csv.writer(f)
         writer.writerows(rows)
     return True
 
+
 class LCH_Table:
-    def __init__(self, primary: str|list, src: str, dest: str, load=LCH_LoadTableCSV, store=LCH_StoreTableCSV):
-        if isinstance(primary, str):
-            self.primary = primary.split(",")
-        else:
-            self.primary = primary
+    def __init__(
+        self,
+        primary: list,
+        src: str,
+        dest: str,
+        load=LCH_LoadTableCSV,
+        store=LCH_StoreTableCSV,
+    ):
+        self.primary = primary
         self.src = src
         self.dest = dest
         self.load = load
         self.store = store
+
 
 class LCH_Instance:
     def __init__(self, work_dir: str, tables: LCH_Table):
@@ -37,15 +45,17 @@ class LCH_Instance:
         self.work_dir = work_dir
         self.tables = tables
 
+
 def _get_indicies(primary, fields):
     keys = [fields.index(f) for f in fields if f in primary]
     vals = [fields.index(f) for f in fields if f not in primary]
     return (keys, vals)
 
+
 def _diff_dict(primary, table):
     fields = table[0]
     rows = table[1:]
-    
+
     # Sort fields to have primary key first
     key_idx, val_idx = _get_indicies(primary, fields)
     fields = ",".join(fields[i] for i in key_idx + val_idx)
@@ -57,6 +67,7 @@ def _diff_dict(primary, table):
         dct[key] = val
 
     return fields, dct
+
 
 def _calculate_diff(primary, new, old):
     fields, new = _diff_dict(primary, new)
@@ -79,6 +90,7 @@ def _calculate_diff(primary, new, old):
 
     return diff
 
+
 def _get_head(workdir):
     path = os.path.join(work_dir, "HEAD")
     if os.path.isfile(path):
@@ -88,6 +100,18 @@ def _get_head(workdir):
     return None
 
 
-
 def commit(instance: LCH_Instance):
-    pass
+    new = {}
+    for table in instance.tables:
+        new[table.source] = table.load(table.source)
+
+    head = _get_head(instance.work_dir)
+    if head is None:
+        old = {key: val[:1] for key, val in new}
+    else:
+        # Iterate blocks to load old file
+        assert False, "Not implemented"
+
+    assert dict(new.keys()) == dict(
+        old.keys()
+    ), f"Missmatching keys {dict(new.keys())} != {dict(old.keys())}"

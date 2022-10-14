@@ -4,6 +4,7 @@ import logging as log
 from doofus.daemon import daemon
 from doofus.utils import work_dir
 
+
 class hubd(daemon):
     def __init__(self, port):
         pidfile = os.path.join(work_dir(), "hubd.pid")
@@ -16,7 +17,9 @@ class hubd(daemon):
 
         bootstrap = subparsers.add_parser("bootstrap")
         bootstrap.add_argument("port", type=int)
-        bootstrap.set_defaults(action=lambda args: self.bootstrap(args.addr[0], args.port))
+        bootstrap.set_defaults(
+            action=lambda args: self.bootstrap(args.addr[0], args.port)
+        )
 
         fetch = subparsers.add_parser("fetch")
         fetch.add_argument("port", type=int)

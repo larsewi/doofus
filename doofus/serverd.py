@@ -5,6 +5,7 @@ import socket
 from doofus.daemon import daemon
 from doofus.utils import recv, send, work_dir
 
+
 class serverd(daemon):
     def __init__(self, port):
         pidfile = os.path.join(work_dir(), "serverd.pid")

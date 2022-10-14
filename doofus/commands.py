@@ -21,6 +21,7 @@ def start_command(name) -> int:
 
     return ret
 
+
 def bootstrap_command(host) -> int:
     with socket.socket() as s:
         s.connect(("localhost", SERVERD_PORT))
@@ -61,6 +62,6 @@ def stop_command(name):
     with socket.socket() as sock:
         sock.connect(("localhost", port))
         send(sock, "exit")
-        ret = recv(sock) 
+        ret = recv(sock)
 
     return ret
