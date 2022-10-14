@@ -1,5 +1,6 @@
 import os
 import csv
+from re import A
 from doofus.block import Block
 
 from doofus.utils import work_dir
@@ -19,17 +20,15 @@ def LCH_StoreTableCSV(path, rows):
     return True
 
 class LCH_Table:
-    def __init__(self, unique_id: str|list, src: str, dest: str, load=LCH_LoadTableCSV, store=LCH_StoreTableCSV):
-        if isinstance(unique_id, str):
-            self.unique_id = unique_id.split(",")
+    def __init__(self, primary: str|list, src: str, dest: str, load=LCH_LoadTableCSV, store=LCH_StoreTableCSV):
+        if isinstance(primary, str):
+            self.primary = primary.split(",")
         else:
-            self.unique_id = unique_id
+            self.primary = primary
         self.src = src
         self.dest = dest
         self.load = load
         self.store = store
-        self.fields = []
-        self.data = {}
 
 class LCH_Instance:
     def __init__(self, work_dir: str, tables: LCH_Table):
@@ -38,61 +37,57 @@ class LCH_Instance:
         self.work_dir = work_dir
         self.tables = tables
 
-
-def _load_tables(tables: list[LCH_Table]):
-    for table in tables:
-        rows = table.load(table.src)
-        table.fields = rows[0]
-        unique = [table.fields.index(f) for f in table.fields if f in table.unique_id]
-        non_unique = [table.fields.index(field) for field in table.fields if field not in table.unique_id]
-
-        for row in rows[1:]:
-            key = ",".join([row[i] for i in unique])
-            val = ",".join([row[i] for i in non_unique])
-            table.data[key] = val
-
-def _store_tables(tables: list[LCH_Table]):
-    for table in tables:
-        rows = [table.fields]
-        for key, val in table.data.items():
-            rows.append(key.split(",") + val.split(","))
-        table.store(table.dest, rows)
+def _get_indicies(primary, fields):
+    keys = [fields.index(f) for f in fields if f in primary]
+    vals = [fields.index(f) for f in fields if f not in primary]
+    return (keys, vals)
 
 def _diff_dict(primary, table):
-    fields = table[:1]
-    key_index = (fields.index(f) for f in fields if f in primary)
-    val_index = (fields.index(f) for f in fields if f not in primary)
-    key_val_pairs = (((row[i] for i in key_index), (row[i] for i in val_index)) for row in table)
-    dct = {key: val for key, val in key_val_pairs}
-    return dct
+    fields = table[0]
+    rows = table[1:]
+    
+    # Sort fields to have primary key first
+    key_idx, val_idx = _get_indicies(primary, fields)
+    fields = ",".join(fields[i] for i in key_idx + val_idx)
+
+    dct = {}
+    for row in rows:
+        key = ",".join(row[i] for i in key_idx)
+        val = ",".join(row[i] for i in val_idx)
+        dct[key] = val
+
+    return fields, dct
 
 def _calculate_diff(primary, new, old):
-    new = _diff_dict(primary, new)
-    old = _diff_dict(primary, old)
-    diff = []
+    fields, new = _diff_dict(primary, new)
+    _, old = _diff_dict(primary, old)
+
+    diff = [fields]
 
     # Rows added from new
     for key in new.keys() - old.keys():
-        diff.append(f"+{','.join(key)}:{','.join(new[key])}")
+        diff.append(f"+{key},{new[key]}")
 
     # Rows removed from new
-    for key in new.keys() - old.keys():
-        diff.append(f"-{','.join(key)}")
+    for key in old.keys() - new.keys():
+        diff.append(f"-{key}")
 
     # Rows changed in new
     for key in new.keys() & old.keys():
         if new[key] != old[key]:
-            diff.append(f"%{','.join(key)}:{','.join(new[key])}")
+            diff.append(f"%{key},{new[key]}")
 
     return diff
 
 def _get_head(workdir):
     path = os.path.join(work_dir, "HEAD")
-    if not os.path.isfile(path):
-        return None
+    if os.path.isfile(path):
+        with open(path, "r") as f:
+            head = f.read(path)
+        return head
+    return None
+
+
 
 def commit(instance: LCH_Instance):
-    _load_tables(instance.tables)
-    new = instance.tables
-
-    head = _get_head(instance.work_dir)
+    pass
