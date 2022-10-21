@@ -1,10 +1,8 @@
 import os
 import csv
-from re import A
 import re
-from typing import Iterable
+import logging as log
 from doofus.block import Block
-
 from doofus.utils import work_dir
 
 
@@ -104,7 +102,7 @@ def _calculate_table_diff(identifier, primary, new, old):
 
 
 def _get_head(workdir: str) -> str | None:
-    path = os.path.join(work_dir, "HEAD")
+    path = os.path.join(workdir, "HEAD")
     if os.path.isfile(path):
         with open(path, "r") as f:
             head = f.read(path)
@@ -116,23 +114,26 @@ def _get_head(workdir: str) -> str | None:
 def commit(instance: LCH_Instance):
     new = {}
     for table in instance.tables:
-        new[table.source] = (table.primary, table.load(table.source))
+        new[table.src] = (table.src, table.primary, table.load(table.src))
 
     head = _get_head(instance.work_dir)
     if head is None:
+        # Generate fake empty tables
+        old = {key: (val[0], val[1][:1]) for key, val in new.items()}
+    else:
         # Iterate blocks to load old file
         assert False, "Not implemented"
-    else:
-        # Generate fake empty tables
-        old = {key: (val[0], val[1][:1]) for key, val in new}
-
-    assert dict(new.keys()) == dict(
-        old.keys()
-    ), f"Missmatching keys {dict(new.keys())} != {dict(old.keys())}"
 
     diffs = []
+    insertions, deletions, modifications = 0, 0, 0
     for source in new.keys():
-        diffs.append(source)
         primary, new_table = new[source]
         _, old_table = old[source]
-        _calculate_table_diff(primary, new_table, old_table)
+        i, d, m , diff = _calculate_table_diff(table.src, primary, new_table, old_table)
+        insertions += i
+        deletions += d
+        modifications += m
+        diffs += diff
+        log.info(f"Calculated diff for '{source}' containing {i} insertions, {d} deletions, {m} modifications")
+    log.info(f"Total: {insertions} insertions, {deletions} deletions, {modifications} modifications")
+
