@@ -48,27 +48,19 @@ class LCH_Instance:
         self.tables = tables
 
 
-def _rotate_fields(primary: str|tuple[str], table: list[list[str]]):
-    """
-    Rotate fields to have primary keys first, but keep the order within
-    primary- and non-primary keys.
-    """
+def _rotate_fields(primary: str | tuple[str], table: list[list[str]]):
     if isinstance(primary, str):
         primary = (primary,)
 
     fields = table[0]
-    assert all(field in fields for field in primary), f"Primary keys {primary} not in fields {fields}"
+    assert all(field in fields for field in primary)
 
-    primary_indecies = [fields.index(f) for f in fields if f in primary]
-    other_indecies = [fields.index(f) for f in fields if f not in primary]
-    assert len(fields) == len(primary_indecies) + len(other_indecies)
+    order = tuple(
+        fields.index(field) for field in sorted(fields) if field in primary
+    ) + tuple(fields.index(field) for field in sorted(fields) if field not in primary)
+    assert len(fields) == len(order)
 
-    rotated = []
-    for row in table:
-        primary_cols = [row[i] for i in primary_indecies]
-        other_cols = [row[i] for i in other_indecies]
-        rotated.append(primary_cols + other_cols)
-    return rotated
+    return list(list(row[i] for i in order) for row in table)
 
 
 def _table_dict(primary: list[str], table: list[list[str]]):
@@ -78,18 +70,18 @@ def _table_dict(primary: list[str], table: list[list[str]]):
 
     dct = {}
     for row in rows:
-        key = ",".join(row[:len(primary)])
-        val = ",".join(row[len(primary):])
+        key = ",".join(row[: len(primary)])
+        val = ",".join(row[len(primary) :])
         dct[key] = val
 
     return fields, dct
 
 
 def _calculate_table_diff(identifier, primary, new, old):
-    primary_fields, other_fields, new = _table_dict(primary, new)
-    _, _, old = _table_dict(primary, old)
+    fields, new = _table_dict(primary, new)
+    _, old = _table_dict(primary, old)
 
-    diff = [identifier, primary_fields, other_fields]
+    diff = [identifier, fields]
     insertions, deletions, modifications = 0, 0, 0
 
     # Rows added from new
@@ -108,10 +100,10 @@ def _calculate_table_diff(identifier, primary, new, old):
             diff.append(f"%{key},{new[key]}")
             modifications += 1
 
-    return diff
+    return insertions, deletions, modifications, diff
 
 
-def _get_head(workdir: str) -> str|None:
+def _get_head(workdir: str) -> str | None:
     path = os.path.join(work_dir, "HEAD")
     if os.path.isfile(path):
         with open(path, "r") as f:
