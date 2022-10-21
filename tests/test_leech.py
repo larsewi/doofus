@@ -68,14 +68,15 @@ def test_rotate_fields():
 
 def test_diff_dict():
     table = [
-        ["firstname", "lastname", "born"],
+        ["lastname", "firstname", "born"],
         ["harrison", "george", "1943"],
         ["starr", "ringo", "1940"],
         ["lennon", "john", "1940"],
         ["mccartney", "paul", "1942"],
     ]
-    fields, dct = _table_dict(("firstname"), table)
-    assert fields == "firstname,lastname,born"
+
+    fields, dct = _table_dict(("lastname",), table)
+    assert fields == "lastname,firstname,born"
     expect = {
         "harrison": "george,1943",
         "starr": "ringo,1940",
@@ -84,21 +85,33 @@ def test_diff_dict():
     }
     assert dct == expect
 
-    table = [
-        ["id", "firstname", "lastname", "born"],
-        ["0", "harrison", "george", "1943"],
-        ["1", "starr", "ringo", "1940"],
-        ["2", "lennon", "john", "1940"],
-        ["3", "mccartney", "paul", "1942"],
-    ]
-    primary_fields, other_fields, dct = _table_dict(("firstname", "lastname"), table)
-    assert primary_fields == "firstname,lastname"
-    assert other_fields == "id,born"
+    fields, dct = _table_dict(("firstname",), table)
+    assert fields == "firstname,lastname,born"
     expect = {
-        "harrison,george": "0,1943",
-        "starr,ringo": "1,1940",
-        "lennon,john": "2,1940",
-        "mccartney,paul": "3,1942",
+        "george": "harrison,1943",
+        "ringo": "starr,1940",
+        "john": "lennon,1940",
+        "paul": "mccartney,1942",
+    }
+    assert dct == expect
+
+    fields, dct = _table_dict(("lastname", "firstname"), table)
+    assert fields == "lastname,firstname,born"
+    expect = {
+        "harrison,george": "1943",
+        "starr,ringo": "1940",
+        "lennon,john": "1940",
+        "mccartney,paul": "1942",
+    }
+    assert dct == expect
+
+    fields, dct = _table_dict(("born", "firstname"), table)
+    assert fields == "firstname,born,lastname"
+    expect = {
+        "george,1943": "harrison",
+        "ringo,1940": "starr",
+        "john,1940": "lennon",
+        "paul,1942": "mccartney",
     }
     assert dct == expect
 

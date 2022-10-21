@@ -73,7 +73,7 @@ def _rotate_fields(primary: str|tuple[str], table: list[list[str]]):
 
 def _table_dict(primary: list[str], table: list[list[str]]):
     table = _rotate_fields(primary, table)
-    fields = table[0]
+    fields = ",".join(table[0])
     rows = table[1:]
 
     dct = {}
