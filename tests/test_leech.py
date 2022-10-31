@@ -143,7 +143,9 @@ def test_calculate_diff():
         ["2", "lennon", "john", "1940"],
         ["3", "mccartney", "paul", "1942"],
     ]
-    insertions, deletions, modifications, diff = _calculate_table_diff("sample.csv", ["id"], new, old)
+    insertions, deletions, modifications, diff = _calculate_table_diff(
+        "sample.csv", ["id"], new, old
+    )
     assert insertions == 0
     assert deletions == 0
     assert modifications == 1
@@ -152,7 +154,6 @@ def test_calculate_diff():
         "id,born,firstname,lastname",
         "%3,1942,McCartney,Paul",
     ]
-
 
     # Remove, add, change
     new = [
@@ -167,7 +168,9 @@ def test_calculate_diff():
         ["2", "lennon", "john", "1940"],
         ["3", "mccartney", "paul", "1942"],
     ]
-    insertions, deletions, modifications, diff = _calculate_table_diff("sample.csv", ["firstname", "lastname"], new, old)
+    insertions, deletions, modifications, diff = _calculate_table_diff(
+        "sample.csv", ["firstname", "lastname"], new, old
+    )
     assert insertions == 1
     assert deletions == 1
     assert modifications == 1

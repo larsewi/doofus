@@ -52,7 +52,9 @@ def _rotate_fields(primary, table: list[list[str]]):
         primary = (primary,)
 
     fields = table[0]
-    assert all(field in fields for field in primary), f"all primary fields '{primary}' not in '{fields}'"
+    assert all(
+        field in fields for field in primary
+    ), f"all primary fields '{primary}' not in '{fields}'"
 
     order = tuple(
         fields.index(field) for field in sorted(fields) if field in primary
@@ -111,6 +113,7 @@ def _get_head(workdir: str):
         return head
     return None
 
+
 def _set_head(workdir: str, head: str):
     assert re.fullmatch(r"[0-9a-f]{40}", head), f"Bad hash from HEAD: {head}"
     path = os.path.join(workdir, "HEAD")
@@ -139,15 +142,19 @@ def commit(instance: LCH_Instance):
     for source in new.keys():
         primary, new_table = new[source]
         _, old_table = old[source]
-        i, d, m , diff = _calculate_table_diff(table.src, primary, new_table, old_table)
+        i, d, m, diff = _calculate_table_diff(table.src, primary, new_table, old_table)
         insertions += i
         deletions += d
         modifications += m
         diffs += diff
-        log.info(f"Calculated diff for '{source}' containing {i} insertions, {d} deletions, {m} modifications")
-    log.info(f"Total: {insertions} insertions, {deletions} deletions, {modifications} modifications")
+        log.info(
+            f"Calculated diff for '{source}' containing {i} insertions, {d} deletions, {m} modifications"
+        )
+    log.info(
+        f"Total: {insertions} insertions, {deletions} deletions, {modifications} modifications"
+    )
 
-    log.debug("Calculated diff:\n%s" % '\n'.join(line for line in diffs))
+    log.debug("Calculated diff:\n%s" % "\n".join(line for line in diffs))
 
     data = "\n".join(diffs)
     block = Block(head, str(datetime.datetime.now()), data)
@@ -155,4 +162,3 @@ def commit(instance: LCH_Instance):
     block.store()
 
     _set_head(instance.work_dir, block.id)
-

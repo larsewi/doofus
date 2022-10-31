@@ -3,6 +3,7 @@ import hashlib
 from functools import cached_property
 from doofus.utils import object_dir
 
+
 class Block:
     def __init__(self, parent: str, timestamp: str, data: str):
         self._parent = parent
@@ -68,9 +69,11 @@ class Block:
         return Block.load(self._parent)
 
     def __str__(self) -> str:
-        return "\n".join((
-            f"Block id   {str(self.id)}",
-            f"Parent id  {str(self.parent)}",
-            f"Timestamp  {str(self.timestamp)}",
-            f"Data       {len(self.data)} Byte(s)",
-        ))
+        return "\n".join(
+            (
+                f"Block id   {str(self.id)}",
+                f"Parent id  {str(self.parent)}",
+                f"Timestamp  {str(self.timestamp)}",
+                f"Data       {len(self.data)} Byte(s)",
+            )
+        )
