@@ -1,4 +1,5 @@
-id,lastname,firstname,born
-0,Bond,James,1953
-1,Wayne,Bruce,1939
-2,Vader,Darth,1977
+born,firstname,lastname
+1943,george,harrison
+1940,ringo,starr
+1940,john,lennon
+1942,paul,mccartney

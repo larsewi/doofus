@@ -46,12 +46,12 @@ class LCH_Instance:
         self.tables = tables
 
 
-def _rotate_fields(primary: str | tuple[str], table: list[list[str]]):
+def _rotate_fields(primary, table: list[list[str]]):
     if isinstance(primary, str):
         primary = (primary,)
 
     fields = table[0]
-    assert all(field in fields for field in primary)
+    assert all(field in fields for field in primary), f"all primary fields '{primary}' not in '{fields}'"
 
     order = tuple(
         fields.index(field) for field in sorted(fields) if field in primary
@@ -101,7 +101,7 @@ def _calculate_table_diff(identifier, primary, new, old):
     return insertions, deletions, modifications, diff
 
 
-def _get_head(workdir: str) -> str | None:
+def _get_head(workdir: str):
     path = os.path.join(workdir, "HEAD")
     if os.path.isfile(path):
         with open(path, "r") as f:
@@ -112,10 +112,12 @@ def _get_head(workdir: str) -> str | None:
 
 
 def commit(instance: LCH_Instance):
+    # Load new tables
     new = {}
     for table in instance.tables:
-        new[table.src] = (table.src, table.primary, table.load(table.src))
+        new[table.src] = (table.primary, table.load(table.src))
 
+    # Load old tables
     head = _get_head(instance.work_dir)
     if head is None:
         # Generate fake empty tables
@@ -136,4 +138,7 @@ def commit(instance: LCH_Instance):
         diffs += diff
         log.info(f"Calculated diff for '{source}' containing {i} insertions, {d} deletions, {m} modifications")
     log.info(f"Total: {insertions} insertions, {deletions} deletions, {modifications} modifications")
+
+    for line in diff:
+        print(line)
 
