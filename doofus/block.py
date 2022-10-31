@@ -41,7 +41,7 @@ class Block:
 
     @staticmethod
     def unmarshal(block: str):
-        parent, timestamp, data = block.split("\n", 3)
+        parent, timestamp, data = block.split("\n", 2)
         return Block(parent, timestamp, data)
 
     @cached_property

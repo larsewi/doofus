@@ -134,8 +134,10 @@ def commit(instance: LCH_Instance):
         old = {key: (val[0], val[1][:1]) for key, val in new.items()}
         head = "0" * 40
     else:
-        # Iterate blocks to load old file
-        assert False, f"Not implemented, head is {head}"
+        block = Block.load(head)
+        blocks = reversed(list(b for b in block))
+        log.debug("Loaded blocks: %s" % "\n".join(list(blocks)))
+        return 0
 
     diffs = []
     insertions, deletions, modifications = 0, 0, 0
