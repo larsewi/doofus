@@ -1,17 +1,20 @@
+import os
 import hashlib
 from functools import cached_property
-import os
-
 from doofus.utils import object_dir
-
-hasher = hashlib.sha1()
-
 
 class Block:
     def __init__(self, parent: str, timestamp: str, data: str):
         self._parent = parent
         self._timestamp = timestamp
         self._data = data
+
+        block = self.marshal()
+        block = block.encode("utf-8")
+        hasher = hashlib.sha1()
+        hasher.update(block)
+        hash = hasher.hexdigest()
+        self._id = hash
 
     @staticmethod
     def load(id):
@@ -33,7 +36,7 @@ class Block:
         return id
 
     def marshal(self) -> str:
-        "\n".join(self._parent, self._timestamp, self._data)
+        return "\n".join((self._parent, self._timestamp, self._data))
 
     @staticmethod
     def unmarshal(block: str):
@@ -42,10 +45,7 @@ class Block:
 
     @cached_property
     def id(self) -> str:
-        block = self.marshal()
-        hasher.update(block)
-        hash = hasher.hexdigest()
-        return hash
+        return self._id
 
     @property
     def parent(self) -> str:
@@ -68,9 +68,9 @@ class Block:
         return Block.load(self._parent)
 
     def __str__(self) -> str:
-        return "\n".join(
+        return "\n".join((
             f"Block id   {str(self.id)}",
             f"Parent id  {str(self.parent)}",
             f"Timestamp  {str(self.timestamp)}",
             f"Data       {len(self.data)} Byte(s)",
-        )
+        ))

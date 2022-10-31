@@ -1,6 +1,7 @@
 import os
 import csv
 import re
+import datetime
 import logging as log
 from doofus.block import Block
 from doofus.utils import work_dir
@@ -105,10 +106,16 @@ def _get_head(workdir: str):
     path = os.path.join(workdir, "HEAD")
     if os.path.isfile(path):
         with open(path, "r") as f:
-            head = f.read(path)
+            head = f.read()
         assert re.fullmatch(r"[0-9a-f]{40}", head), f"Bad hash from HEAD: {head}"
         return head
     return None
+
+def _set_head(workdir: str, head: str):
+    assert re.fullmatch(r"[0-9a-f]{40}", head), f"Bad hash from HEAD: {head}"
+    path = os.path.join(workdir, "HEAD")
+    with open(path, "w") as f:
+        f.write(head)
 
 
 def commit(instance: LCH_Instance):
@@ -122,9 +129,10 @@ def commit(instance: LCH_Instance):
     if head is None:
         # Generate fake empty tables
         old = {key: (val[0], val[1][:1]) for key, val in new.items()}
+        head = "0" * 40
     else:
         # Iterate blocks to load old file
-        assert False, "Not implemented"
+        assert False, f"Not implemented, head is {head}"
 
     diffs = []
     insertions, deletions, modifications = 0, 0, 0
@@ -139,4 +147,12 @@ def commit(instance: LCH_Instance):
         log.info(f"Calculated diff for '{source}' containing {i} insertions, {d} deletions, {m} modifications")
     log.info(f"Total: {insertions} insertions, {deletions} deletions, {modifications} modifications")
 
-    log.debug("Calculated diff:\n%s" % '\n'.join(line for line in diff))
+    log.debug("Calculated diff:\n%s" % '\n'.join(line for line in diffs))
+
+    data = "\n".join(diffs)
+    block = Block(head, str(datetime.datetime.now()), data)
+    log.debug("Created block:\n%s" % block)
+    block.store()
+
+    _set_head(instance.work_dir, block.id)
+
