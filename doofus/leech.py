@@ -139,6 +139,4 @@ def commit(instance: LCH_Instance):
         log.info(f"Calculated diff for '{source}' containing {i} insertions, {d} deletions, {m} modifications")
     log.info(f"Total: {insertions} insertions, {deletions} deletions, {modifications} modifications")
 
-    for line in diff:
-        print(line)
-
+    log.debug("Calculated diff:\n%s" % '\n'.join(line for line in diff))
