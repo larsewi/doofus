@@ -60,14 +60,6 @@ class Block:
     def data(self) -> str:
         return self._data
 
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self._parent == "0" * 40:
-            raise StopIteration
-        return Block.load(self._parent)
-
     def __str__(self) -> str:
         return "\n".join(
             (

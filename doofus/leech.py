@@ -121,6 +121,18 @@ def _set_head(workdir: str, head: str):
         f.write(head)
 
 
+def _load_blocks_until(block: Block, hash: str):
+    assert re.fullmatch(r"[0-9a-f]{40}", hash), f"Bad hash: {hash}"
+    blocks = []
+    while block is not None:
+        blocks.insert(0, block)
+        block = Block.load(block.parent)
+    return blocks
+
+def _table_from_diff(current, diffs: str):
+    pass
+
+
 def commit(instance: LCH_Instance):
     # Load new tables
     new = {}
@@ -135,8 +147,11 @@ def commit(instance: LCH_Instance):
         head = "0" * 40
     else:
         block = Block.load(head)
-        blocks = reversed(list(b for b in block))
-        log.debug("Loaded blocks: %s" % "\n".join(list(blocks)))
+        blocks = _load_blocks_until(block, "0" * 40)
+        old = {}
+        for block in blocks:
+            pass
+
         return 0
 
     diffs = []
@@ -144,7 +159,7 @@ def commit(instance: LCH_Instance):
     for source in new.keys():
         primary, new_table = new[source]
         _, old_table = old[source]
-        i, d, m, diff = _calculate_table_diff(table.src, primary, new_table, old_table)
+        i, d, m, diff = _calculate_table_diff(source, primary, new_table, old_table)
         insertions += i
         deletions += d
         modifications += m
