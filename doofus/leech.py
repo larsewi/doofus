@@ -3,6 +3,7 @@ import csv
 import re
 import datetime
 import logging as log
+from enum import Enum
 from doofus.block import Block
 from doofus.utils import work_dir
 
@@ -129,9 +130,52 @@ def _load_blocks_until(block: Block, hash: str):
         block = Block.load(block.parent)
     return blocks
 
-def _table_from_diff(current, diffs: str):
-    pass
+def _update_tables_on_diffs(instance: LCH_Instance, current, diffs: str):
+    class State(Enum):
+        IDENTIFIER = 0
+        HEADER = 1
+        CONTENT = 2
 
+    state = State.IDENTIFIER
+    primary, table = None, None
+
+    for line in diffs.splitlines():
+        if state == State.IDENTIFIER:
+            primary, table = current[line]
+            state = State.HEADER
+        elif state == State.HEADER:
+            assert table[0] == line.split(","), f"{table[0]} != {line.split(',')}"
+            state = State.CONTENT
+        elif state == State.CONTENT:
+            if line.startswith("+"):
+                table.append(line[1:].split(","))
+            elif line.startswith("-"):
+                primary_key = line[1:].split(",")
+                for i in len(table):
+                    row = table[i]
+                    correct = True
+                    for j in len(primary):
+                        if row[i][j] != primary_key[j]:
+                            current = False
+                    if correct:
+                        table.remove(i)
+                        break
+            elif line.startswith("%"):
+                new_row = line[1:].split(",")
+                for i in len(table):
+                    row = table[i]
+                    correct = True
+                    for j in len(primary):
+                        if row[i][j] != new_row[j]:
+                            current = False
+                    if correct:
+                        table[i] = line[1:].split(",")
+                        break
+                pass
+            else:
+                state == State.IDENTIFIER
+        else:
+            assert False, "Illegal state!"
 
 def commit(instance: LCH_Instance):
     # Load new tables
@@ -139,20 +183,22 @@ def commit(instance: LCH_Instance):
     for table in instance.tables:
         new[table.src] = (table.primary, table.load(table.src))
 
+    # Generate empty tables
+    old = {key: (val[0], val[1][:1]) for key, val in new.items()}
+
     # Load old tables
     head = _get_head(instance.work_dir)
-    if head is None:
-        # Generate fake empty tables
-        old = {key: (val[0], val[1][:1]) for key, val in new.items()}
-        head = "0" * 40
-    else:
+    if head is not None:
         block = Block.load(head)
         blocks = _load_blocks_until(block, "0" * 40)
-        old = {}
         for block in blocks:
-            pass
+            log.info("Reading block:\n{block}")
+            diffs = block.data
+            _update_tables_on_diffs(instance, old, diffs)
 
         return 0
+    else:
+        head = "0" * 40
 
     diffs = []
     insertions, deletions, modifications = 0, 0, 0
